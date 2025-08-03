@@ -44,6 +44,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.3.0",
+    "gsap": "^3.12.5",
     "input-otp": "^1.2.4",
     "lucide-react": "^0.446.0",
     "next-themes": "^0.3.0",
@@ -56,16 +57,16 @@
     "sonner": "^1.5.0",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "vaul": "^1.0.0",
-    "zod": "^3.23.8",
     "three": "^0.166.1",
-    "gsap": "^3.12.5"
+    "vaul": "^1.0.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
     "@types/node": "^22.7.3",
     "@types/react": "^18.3.9",
     "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.178.1",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.11.1",
