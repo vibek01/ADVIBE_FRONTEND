@@ -60,42 +60,12 @@ export const Component = () => {
     // Keep refs in a variable to avoid accessing .current repeatedly
     const refs = threeRefs.current;
     
-    const initThree = () => {
-        if (!canvasRef.current) return;
-        refs.scene = new THREE.Scene();
-        refs.scene.fog = new THREE.FogExp2(0x000000, 0.00025);
+    // ====================================================================
+    // DEFINITIVE FIX: The `create...` functions now accept the scene directly.
+    // This removes all ambiguity for TypeScript.
+    // ====================================================================
 
-        refs.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
-        refs.camera.position.z = 100;
-        refs.camera.position.y = 20;
-
-        refs.renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, antialias: true, alpha: true });
-        refs.renderer.setSize(window.innerWidth, window.innerHeight);
-        refs.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        refs.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        refs.renderer.toneMappingExposure = 0.5;
-
-        // At this point, refs.scene is guaranteed to be a new THREE.Scene
-        const renderPass = new RenderPass(refs.scene, refs.camera);
-        refs.composer = new EffectComposer(refs.renderer);
-        refs.composer.addPass(renderPass);
-
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.85);
-        refs.composer.addPass(bloomPass);
-
-        createStarField();
-        createNebula();
-        createMountains();
-        createAtmosphere();
-        getLocation();
-
-        animate();
-        setIsReady(true);
-    };
-
-    const createStarField = () => {
-        // FINAL FIX: This check proves to TypeScript that refs.scene is not null.
-        if (!refs.scene) return;
+    const createStarField = (scene: THREE.Scene) => {
         const starCount = 5000;
         for (let i = 0; i < 3; i++) {
           const geometry = new THREE.BufferGeometry();
@@ -129,14 +99,12 @@ export const Component = () => {
             transparent: true, blending: THREE.AdditiveBlending, depthWrite: false
           });
           const stars = new THREE.Points(geometry, material);
-          refs.scene.add(stars);
+          scene.add(stars); // Use the guaranteed 'scene' parameter
           refs.stars.push(stars);
         }
     };
 
-    const createNebula = () => {
-        // FINAL FIX: This check proves to TypeScript that refs.scene is not null.
-        if (!refs.scene) return;
+    const createNebula = (scene: THREE.Scene) => {
         const geometry = new THREE.PlaneGeometry(8000, 4000, 100, 100);
         const material = new THREE.ShaderMaterial({
           uniforms: { time: { value: 0 }, color1: { value: new THREE.Color(0x0033ff) }, color2: { value: new THREE.Color(0xff0066) }, opacity: { value: 0.3 } },
@@ -147,13 +115,11 @@ export const Component = () => {
         const nebula = new THREE.Mesh(geometry, material);
         nebula.position.z = -1050;
         nebula.rotation.x = 0;
-        refs.scene.add(nebula);
+        scene.add(nebula); // Use the guaranteed 'scene' parameter
         refs.nebula = nebula;
     };
       
-    const createMountains = () => {
-        // FINAL FIX: This check proves to TypeScript that refs.scene is not null.
-        if (!refs.scene) return;
+    const createMountains = (scene: THREE.Scene) => {
         const layers = [
           { distance: -50, height: 60, color: 0x1a1a2e, opacity: 1 },
           { distance: -100, height: 80, color: 0x16213e, opacity: 0.8 },
@@ -177,14 +143,12 @@ export const Component = () => {
           mountain.position.z = layer.distance;
           mountain.position.y = layer.distance;
           mountain.userData = { baseZ: layer.distance };
-          refs.scene.add(mountain);
+          scene.add(mountain); // Use the guaranteed 'scene' parameter
           refs.mountains.push(mountain);
         });
     };
       
-    const createAtmosphere = () => {
-        // FINAL FIX: This check proves to TypeScript that refs.scene is not null.
-        if (!refs.scene) return;
+    const createAtmosphere = (scene: THREE.Scene) => {
         const geometry = new THREE.SphereGeometry(600, 32, 32);
         const material = new THREE.ShaderMaterial({
           uniforms: { time: { value: 0 } },
@@ -193,7 +157,7 @@ export const Component = () => {
           side: THREE.BackSide, blending: THREE.AdditiveBlending, transparent: true
         });
         const atmosphere = new THREE.Mesh(geometry, material);
-        refs.scene.add(atmosphere);
+        scene.add(atmosphere); // Use the guaranteed 'scene' parameter
     };
 
     const animate = () => {
@@ -219,6 +183,42 @@ export const Component = () => {
             mountain.position.y = 50 + (Math.cos(time * 0.15) * 1 * parallaxFactor);
         });
         refs.composer?.render();
+    };
+    
+    const initThree = () => {
+        if (!canvasRef.current) return;
+        
+        // Create the scene and store it in a local variable
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.00025);
+        refs.scene = scene; // Also assign it to the ref
+
+        refs.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        refs.camera.position.z = 100;
+        refs.camera.position.y = 20;
+
+        refs.renderer = new THREE.WebGLRenderer({ canvas: canvasRef.current, antialias: true, alpha: true });
+        refs.renderer.setSize(window.innerWidth, window.innerHeight);
+        refs.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        refs.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        refs.renderer.toneMappingExposure = 0.5;
+
+        const renderPass = new RenderPass(scene, refs.camera);
+        refs.composer = new EffectComposer(refs.renderer);
+        refs.composer.addPass(renderPass);
+
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.85);
+        refs.composer.addPass(bloomPass);
+
+        // DEFINITIVE FIX: Pass the newly created scene to each function
+        createStarField(scene);
+        createNebula(scene);
+        createMountains(scene);
+        createAtmosphere(scene);
+        getLocation();
+
+        animate();
+        setIsReady(true);
     };
 
     initThree();
@@ -284,7 +284,8 @@ export const Component = () => {
         refs.targetCameraZ = currentPos.z + (nextPos.z - currentPos.z) * sectionProgress;
         refs.mountains.forEach((mountain, i) => {
             const speed = 1 + i * 0.9;
-            const targetZ = mountain.userData.baseZ + scrollY * speed * 0.5;
+            const baseZ = mountain.userData.baseZ as number;
+            const targetZ = baseZ + scrollY * speed * 0.5;
             if (refs.nebula) refs.nebula.position.z = (targetZ + progress * speed * 0.01) - 100;
             mountain.userData.targetZ = targetZ;
             if (progress > 0.7) mountain.position.z = 600000;
@@ -317,7 +318,7 @@ export const Component = () => {
       <div ref={scrollProgressRef} className="scroll-progress" style={{ visibility: 'hidden' }}>
         <div className="scroll-text">SCROLL</div>
         <div className="progress-track"><div className="progress-fill" style={{ width: `${scrollProgress * 100}%` }} /></div>
-        <div className="section-counter">{String(currentSection).padStart(2, '0')} / {String(totalSections).padStart(2, '0')}</div>
+        <div className="section-counter">{String(currentSection + 1).padStart(2, '0')} / {String(totalSections + 1).padStart(2, '0')}</div>
       </div>
       <div className="scroll-sections">
         {[...Array(2)].map((_, i) => {
